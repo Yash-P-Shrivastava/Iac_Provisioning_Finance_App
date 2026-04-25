@@ -3,7 +3,7 @@ import { object, string } from "yup";
 import { toast } from "react-toastify";
 
 import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import {
   useRegisterMutation,
   useSendOtpMutation,
@@ -142,6 +142,7 @@ const Register = () => {
         imageTitle="Easy to Use."
         imageSrc={registerImg}
         alt="registration image"
+        onSubmit={step === 1 ? handleSubmit : handleOtpSubmit}
         form={
           step === 1 ? (
             <>
@@ -162,7 +163,6 @@ const Register = () => {
               />
               <SubmitButton
                 isLoading={registerLoading}
-                handleSubmit={handleSubmit}
                 isDisabled={!email || !password || !username || hasErrors}
               />
             </>

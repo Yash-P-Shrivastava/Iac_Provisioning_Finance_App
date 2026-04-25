@@ -10,6 +10,7 @@ const UserAuthForm = ({
   imageTitle,
   alt,
   form,
+  onSubmit,
   footer,
   footerLink,
   footerLinkPath,
@@ -49,9 +50,9 @@ const UserAuthForm = ({
         </h3>
 
         {/* Form Slot: The gap-y-5 from Login.jsx will now work perfectly here */}
-        <div className="w-full max-w-[350px]">
+        <form onSubmit={onSubmit} className="w-full max-w-[350px]">
           {form}
-        </div>
+        </form>
 
         {/* Footer */}
         {footer && (

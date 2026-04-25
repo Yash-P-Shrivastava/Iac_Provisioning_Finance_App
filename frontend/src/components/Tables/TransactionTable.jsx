@@ -17,7 +17,6 @@ import { openModal as deleteModal } from "../../features/TransactionModals/delet
 import { openModal as viewAndUpdateModal } from "../../features/TransactionModals/viewAndUpdateModal";
 import { EyeOutline as Eye, Edit, Delete } from "../../utils/Icons";
 
-/** ✅ Default safe color map (prevents refresh crash) */
 const defaultChipColorMap = {
   salary: "success",
   freelance: "default",
@@ -35,12 +34,36 @@ const TransactionTable = ({
   setCurrentPage,
   totalPages,
   currentPage,
-  chipColorMap = defaultChipColorMap, // ✅ fallback if not passed
+  chipColorMap = defaultChipColorMap,
 }) => {
   const dispatch = useDispatch();
-
-  /** ✅ Ensure safe array */
   const safeData = Array.isArray(data) ? data : [];
+
+  const openViewModal = (transaction, _id) => {
+    dispatch(
+      viewAndUpdateModal({
+        transaction,
+        _id,
+        type: name,
+        isDisabled: true,
+      })
+    );
+  };
+
+  const openEditModal = (transaction, _id) => {
+    dispatch(
+      viewAndUpdateModal({
+        transaction,
+        _id,
+        type: name,
+        isDisabled: false,
+      })
+    );
+  };
+
+  const openDeleteModal = (title, _id) => {
+    dispatch(deleteModal({ title, _id, type: name }));
+  };
 
   return (
     <div className="w-full h-full flex justify-center">
@@ -89,19 +112,16 @@ const TransactionTable = ({
           {safeData.map(
             ({ title, amount, category, description, date, _id }, index) => (
               <TableRow key={_id || index}>
-                {/* Title */}
                 <TableCell className="text-primary font-calSans tracking-wider capitalize">
                   {title || "-"}
                 </TableCell>
 
-                {/* Amount */}
                 <TableCell>${amount ?? 0}</TableCell>
 
-                {/* Category */}
                 <TableCell>
                   <Chip
                     className="capitalize"
-                    color={chipColorMap?.[category] || "default"} // ✅ SAFE
+                    color={chipColorMap?.[category] || "default"}
                     size="sm"
                     variant="flat"
                   >
@@ -109,7 +129,6 @@ const TransactionTable = ({
                   </Chip>
                 </TableCell>
 
-                {/* Description */}
                 <TableCell
                   className={`transition-all ${
                     description?.length > 20
@@ -118,19 +137,15 @@ const TransactionTable = ({
                   }`}
                   onClick={() => {
                     if (description?.length > 20) {
-                      dispatch(
-                        viewAndUpdateModal({
-                          transaction: {
-                            title,
-                            amount,
-                            category,
-                            description,
-                            date,
-                          },
-                          _id,
-                          type: name,
-                          isDisabled: true,
-                        })
+                      openViewModal(
+                        {
+                          title,
+                          amount,
+                          category,
+                          description,
+                          date,
+                        },
+                        _id
                       );
                     }
                   }}
@@ -142,70 +157,61 @@ const TransactionTable = ({
                     : "-"}
                 </TableCell>
 
-                {/* Date */}
                 <TableCell>
                   {date ? moment(date).format("YYYY-MM-DD") : "-"}
                 </TableCell>
 
-                {/* Actions */}
                 <TableCell className="relative flex items-center gap-2">
-                  {/* View */}
                   <Tooltip content="View More">
                     <span
                       className="text-lg text-default-400 cursor-pointer active:opacity-50"
-                      onClick={() =>
-                        dispatch(
-                          viewAndUpdateModal({
-                            transaction: {
-                              title,
-                              amount,
-                              category,
-                              description,
-                              date,
-                            },
-                            _id,
-                            type: name,
-                            isDisabled: true,
-                          })
-                        )
-                      }
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openViewModal(
+                          {
+                            title,
+                            amount,
+                            category,
+                            description,
+                            date,
+                          },
+                          _id
+                        );
+                      }}
                     >
                       <Eye />
                     </span>
                   </Tooltip>
 
-                  {/* Edit */}
                   <Tooltip content="Edit">
                     <span
                       className="text-lg text-default-400 cursor-pointer active:opacity-50"
-                      onClick={() =>
-                        dispatch(
-                          viewAndUpdateModal({
-                            transaction: {
-                              _id,
-                              title,
-                              amount,
-                              category,
-                              description,
-                              date,
-                            },
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openEditModal(
+                          {
                             _id,
-                            type: name,
-                          })
-                        )
-                      }
+                            title,
+                            amount,
+                            category,
+                            description,
+                            date,
+                          },
+                          _id
+                        );
+                      }}
                     >
                       <Edit />
                     </span>
                   </Tooltip>
 
-                  {/* Delete */}
                   <Tooltip color="danger" content="Delete">
                     <span
                       className="text-lg text-danger cursor-pointer active:opacity-50"
-                      onClick={() =>
-                        dispatch(deleteModal({ title, _id, type: name }))
-                      }
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openDeleteModal(title, _id);
+                      }}
                     >
                       <Delete />
                     </span>

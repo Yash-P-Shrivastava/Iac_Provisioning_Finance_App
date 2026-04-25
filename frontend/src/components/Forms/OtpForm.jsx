@@ -14,7 +14,7 @@ const OtpForm = ({
   return (
     /* We use a flex container here to manage the internal spacing 
        of the OTP elements specifically. */
-    <div className="flex flex-col items-center w-full gap-y-6">
+    <form onSubmit={handleOtpSubmit} className="flex flex-col items-center w-full gap-y-6">
       
       <div className="w-full flex justify-center">
         <OtpInput
@@ -26,13 +26,13 @@ const OtpForm = ({
       </div>
 
       <Button
+        type="submit"
         variant="solid" // Changed to solid for better visibility on the blue background
         radius="full"
         isLoading={verifyOtpLoading}
         isDisabled={!otp || otp.length !== 4}
         /* Adjusted classes for Tailwind v4 and better contrast */
         className="bg-white text-primary font-bold text-lg w-full h-12 hover:bg-slate-100 transition-colors shadow-lg"
-        onClick={handleOtpSubmit}
       >
         Verify OTP
       </Button>
@@ -42,6 +42,7 @@ const OtpForm = ({
           Didn't receive OTP?
           {countdown === 0 ? (
             <button 
+              type="button"
               onClick={resendOtp} 
               className="ml-2 text-white underline hover:text-secondary-200 transition-all cursor-pointer bg-transparent border-none"
             >
@@ -54,7 +55,7 @@ const OtpForm = ({
           )}
         </p>
       </div>
-    </div>
+    </form>
   );
 };
 

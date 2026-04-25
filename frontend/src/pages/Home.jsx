@@ -17,7 +17,7 @@ const Home = () => {
     if (userIsVerified) {
       navigate("/dashboard");
     }
-  }, [userIsVerified]);
+  }, [navigate, userIsVerified]);
 
   return (
     <main className={`${userIsVerified ? "hidden" : ""} w-full h-full`}>

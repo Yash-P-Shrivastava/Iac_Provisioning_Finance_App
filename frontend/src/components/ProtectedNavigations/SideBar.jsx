@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
-
+import { Brain } from "lucide-react"; // or use any icon you prefer
 import {
   Dashboard,
   Income,
@@ -90,7 +90,17 @@ const SideBar = () => {
             <Settings className="size-5" />
             Settings
           </li>
-
+              <li
+                className={`flex items-center gap-x-3 px-4 py-3 rounded-xl cursor-pointer transition-all font-medium text-sm
+                  ${isRouteActive("/dashboard/ai") 
+                    ? "bg-primary/10 text-primary shadow-sm" 
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
+                onClick={() => navigate("/dashboard/ai")}
+              >
+                        <Brain className="size-5" />
+                        AI Assistant
+          </li>
           <li
             className="flex items-center gap-x-3 px-4 py-3 rounded-xl cursor-pointer transition-all font-medium text-sm text-slate-500 hover:bg-red-50 hover:text-red-600"
             onClick={() => dispatch(openModal())}

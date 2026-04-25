@@ -8,7 +8,7 @@ import {
   Button,
 } from "@nextui-org/react";
 import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import { useLogoutMutation } from "../../features/api/apiSlices/userApiSlice";
@@ -26,6 +26,7 @@ const LogoutModal = () => {
   const handleLogout = async (e) => {
     try {
       e.preventDefault();
+
       dispatch(updateLoader(40));
       const res = await logout().unwrap();
       await dispatch(resetCredentials());
@@ -45,30 +46,26 @@ const LogoutModal = () => {
 
   return (
     <Modal
-        isOpen={isOpen}
-        onClose={() => dispatch(closeModal())}
-        placement="center"
-        backdrop="blur"
-        scrollBehavior="inside"   // ⭐ IMPORTANT
-        size="md"                 // keeps modal within viewport
-
-      // Custom classNames to style the NextUI slots
+      isOpen={isOpen}
+      onClose={() => dispatch(closeModal())}
+      placement="center"
+      backdrop="blur"
+      hideCloseButton={false}
       classNames={{
-        base: "bg-white rounded-2xl border border-slate-200 shadow-2xl",
-        header: "border-b border-slate-100 pb-4",
-        footer: "border-t border-slate-100 pt-4",
-        closeButton: "hover:bg-slate-100 transition-colors",
+        base: "bg-white",
+        backdrop: "bg-slate-900/30",
       }}
     >
       <ModalContent>
-        <>
-          <ModalHeader className="flex flex-col gap-1">
-            <h4 className="text-2xl font-bold text-slate-900">
-              Logout Confirmation
+        {(onClose) => (
+          <>
+          <ModalHeader>
+            <h4 className="text-2xl text-error tracking-relaxed">
+              Logout Confirmation ?
             </h4>
           </ModalHeader>
-          <ModalBody className="py-6">
-            <p className="text-slate-600 leading-relaxed">
+          <ModalBody>
+            <p>
               Are you sure you want to log out? Logging out will end your
               current session and you will need to sign in again to access your
               account.
@@ -76,23 +73,28 @@ const LogoutModal = () => {
           </ModalBody>
           <ModalFooter>
             <Button
-              variant="light"
-              onPress={() => dispatch(closeModal())}
-              className="text-slate-600 font-semibold px-6"
+              color="danger"
+              variant="flat"
+              onPress={() => {
+                dispatch(closeModal());
+                onClose();
+              }}
+              className="text-base"
             >
-              Stay Logged In
+              Cancel
             </Button>
             <Button
-              // Using your primary blue color
-              className="bg-primary text-white font-bold px-8 shadow-md hover:opacity-90 transition-opacity"
+              color="primary"
               onClick={handleLogout}
-              endContent={<Logout className="size-4" />}
+              endContent={<Logout />}
               isLoading={isLoading}
+              className="text-base"
             >
-              Yes, Logout
+              Logout
             </Button>
           </ModalFooter>
         </>
+        )}
       </ModalContent>
     </Modal>
   );

@@ -1,59 +1,38 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Chart from "../../components/Chart";
 import { useSelector } from "react-redux";
 import moment from "moment";
-import { toast } from "react-toastify";
 import { NumericFormat } from "react-number-format";
 
 import { Income, Expense, Balance } from "../../utils/Icons";
-import { useGetAllIncomesQuery } from "../../features/api/apiSlices/incomeApiSlice";
-import { useGetAllExpensesQuery } from "../../features/api/apiSlices/expenseApiSlice";
+import {
+  useGetAllIncomesQuery,
+} from "../../features/api/apiSlices/incomeApiSlice";
+import {
+  useGetAllExpensesQuery,
+} from "../../features/api/apiSlices/expenseApiSlice";
 
 const DashboardPage = () => {
   const user = useSelector((state) => state.auth.user.username);
+  const { data: incomeData } = useGetAllIncomesQuery();
+  const { data: expenseData } = useGetAllExpensesQuery();
 
-  const [totalBalance, setTotalBalance] = useState(0);
-  const [totalIncome, setTotalIncome] = useState(0);
-  const [totalExpense, setTotalExpense] = useState(0);
-  const [recentHistory, setRecentHistory] = useState([]);
+  const totalIncome = incomeData?.totalIncome || 0;
+  const totalExpense = expenseData?.totalExpense || 0;
+  const totalBalance = totalIncome - totalExpense;
 
-  const { data: incomeData, refetch: refetchIncomes } = useGetAllIncomesQuery();
-  const { data: expenseData, refetch: refetchExpenses } =
-    useGetAllExpensesQuery();
-
-  const fetchData = async () => {
-    try {
-      await refetchIncomes();
-      await refetchExpenses();
-      if (incomeData) {
-        setTotalIncome(incomeData?.totalIncome);
-      }
-      if (expenseData) {
-        setTotalExpense(expenseData?.totalExpense);
-      }
-      const totalBalance =
-        (incomeData?.totalIncome || 0) - (expenseData?.totalExpense || 0);
-      setTotalBalance(totalBalance);
-
-      const recentHistory = [
-        ...(incomeData?.incomes || []).map((transaction) => ({
-          ...transaction,
-          type: "income",
-        })),
-        ...(expenseData?.expenses || []).map((transaction) => ({
-          ...transaction,
-          type: "expense",
-        })),
-      ];
-      recentHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-      const recentTransactions = recentHistory.slice(0, 3);
-
-      setRecentHistory(recentTransactions);
-    } catch (error) {
-      console.log(error);
-      toast.error(error?.data?.error || "Unexpected Internal Server Error!");
-    }
-  };
+  const recentHistory = [
+    ...(incomeData?.incomes || []).map((transaction) => ({
+      ...transaction,
+      type: "income",
+    })),
+    ...(expenseData?.expenses || []).map((transaction) => ({
+      ...transaction,
+      type: "expense",
+    })),
+  ]
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 3);
 
   const incomeDates =
     incomeData?.incomes.map((income) =>
@@ -82,12 +61,8 @@ const DashboardPage = () => {
     }));
   }
 
-  useEffect(() => {
-    fetchData();
-  }, [incomeData, expenseData]);
-
   return (
-    <section className="w-full h-full md:h-[90vh] px-3 md:px-6">
+    <section className="w-full min-h-full px-3 md:px-6 pb-8">
       <h2 className="text-2xl md:text-3xl lg:text-4xl mt-3 text-center sm:text-left text-pretty">
         Hello, {user}😊
       </h2>
@@ -96,6 +71,7 @@ const DashboardPage = () => {
         incomes/expenses.{" "}
         <span className="font-bold text-primary">Spend Smartly!</span>
       </h3>
+     
       <div className="w-full mt-8 flex flex-col sm:flex-row gap-y-4 justify-between items-center">
         <div className="px-6 py-4 border-2 w-full sm:w-[30%] border-secondary rounded-lg inline-flex justify-between items-center">
           <div>
@@ -143,10 +119,10 @@ const DashboardPage = () => {
           <Expense className="icon" />
         </div>
       </div>
-      <div className="w-full h-full md:h-[60%] mt-4 md:flex gap-x-4 overflow-hidden">
-        <div className="w-full md:w-[60%] h-[25rem] md:h-full flex flex-col justify-center items-center overflow-x-scroll">
+      <div className="w-full mt-4 md:flex gap-x-4">
+        <div className="w-full md:w-[60%] min-h-[25rem] flex flex-col justify-center items-center overflow-hidden">
           <h5 className="text-2xl">Activity</h5>
-          <div className="min-w-[20rem] w-full h-full">
+          <div className="min-w-[20rem] w-full h-[22rem] md:h-[26rem] min-h-[22rem]">
             <Chart data={data} />
           </div>
         </div>
@@ -162,7 +138,7 @@ const DashboardPage = () => {
             ) : (
               recentHistory.map((transaction) => (
                 <li
-                  key={transaction.id}
+                  key={transaction._id}
                   className="border-2 border-secondary rounded-lg px-3 py-4 flex justify-between items-center"
                 >
                   <div className="flex gap-x-4">

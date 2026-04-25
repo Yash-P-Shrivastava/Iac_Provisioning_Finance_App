@@ -5,12 +5,11 @@ import moment from "moment";
 import { parseDate } from "@internationalized/date";
 import { NumericFormat } from "react-number-format";
 
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import {
   useGetExpenseQuery,
   useAddExpenseMutation,
 } from "../../features/api/apiSlices/expenseApiSlice";
-import { updateLoader } from "../../features/loader/loaderSlice";
 
 import { TransactionForm } from "../../components/Forms";
 import validateForm from "../../utils/validateForm";
@@ -25,9 +24,7 @@ const Expenses = () => {
     date: parseDate(moment().format("YYYY-MM-DD")),
   });
   const [errors, setErrors] = useState({});
-  const [totalExpense, setTotalExpense] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const isRefetchDeleteModal = useSelector(
     (state) => state.deleteTransactionModal.refetch
   );
@@ -85,12 +82,15 @@ const Expenses = () => {
   };
 
   const handleOnChange = (e) => {
+    const { name, value } = e.target;
+    const finalValue = name === "amount" ? Number(value) : value;
+
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: finalValue,
     }));
 
-    validateForm(e.target.name, e.target.value, validationSchema, setErrors);
+    validateForm(name, finalValue, validationSchema, setErrors);
   };
   const handleDateChange = (newDate) => {
     setFormData({ ...formData, date: newDate });
@@ -106,28 +106,10 @@ const Expenses = () => {
     page: currentPage,
     pageSize: 10,
   });
-  const dispatch = useDispatch();
 
-  const fetchData = async () => {
-    try {
-      await refetch();
-      if (data?.expenses) {
-        setTotalExpense(data.totalExpense);
-        setTotalPages(data.pagination.totalPages);
-      }
-    } catch (error) {
-      console.log(error);
-      toast.error(
-        error?.data?.error ||
-          "An unexpected error occurred while fetching data!"
-      );
-    }
-  };
   const handleSubmit = async (e) => {
     try {
       e.preventDefault();
-
-      dispatch(updateLoader(40));
 
       const formattedDate = moment({
         year: formData.date.year,
@@ -141,63 +123,83 @@ const Expenses = () => {
 
       const res = await addExpense(updatedFormData).unwrap();
 
-      dispatch(updateLoader(60));
       toast.success(res.message || "Expense added successfully!");
+      setFormData({
+        title: "",
+        amount: "",
+        description: "",
+        category: "",
+        date: parseDate(moment().format("YYYY-MM-DD")),
+      });
+      setErrors({});
     } catch (error) {
       console.log(error);
       toast.error(error?.data?.error || "Unexpected Internal Server Error!");
     } finally {
       await refetch();
-      dispatch(updateLoader(100));
     }
   };
 
   useEffect(() => {
-    fetchData();
-    if (isRefetchDeleteModal || isRefetchViewAndUpdateModal) fetchData();
-  }, [data, isRefetchDeleteModal, isRefetchViewAndUpdateModal]);
+    if (isRefetchDeleteModal || isRefetchViewAndUpdateModal) {
+      refetch();
+    }
+  }, [isRefetchDeleteModal, isRefetchViewAndUpdateModal, refetch]);
 
   const hasErrors = Object.values(errors).some((error) => !!error);
+  const totalExpense = data?.totalExpense || 0;
+  const totalPages = data?.pagination?.totalPages || 1;
 
   return (
-    <>
-      <h3 className="text-3xl lg:text-5xl mt-4 text-center">
-        Total Expense -{" "}
-        <span className="text-red-400">
-          $
-          <NumericFormat
-            className="ml-1 text-2xl lg:text-4xl"
-            value={totalExpense}
-            displayType={"text"}
-            thousandSeparator={true}
+    <div className="flex flex-col gap-8 p-6 max-w-[1600px] mx-auto">
+      <div className="flex flex-col gap-4 bg-white p-6 rounded-2xl shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Expenses</h2>
+          <p className="text-gray-500">Track and organize your spending</p>
+        </div>
+
+        <div className="text-left sm:text-right">
+          <p className="text-sm text-gray-500">Total Expense</p>
+          <h3 className="text-3xl font-bold text-red-500">
+            $ <NumericFormat value={totalExpense} displayType="text" thousandSeparator />
+          </h3>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-4">
+          <div className="bg-white rounded-2xl shadow-sm p-6 flex flex-col">
+            <h3 className="text-lg font-semibold mb-4">Add Expense</h3>
+
+            <TransactionForm
+              button="Add Expense"
+              categories={expenseCategories}
+              btnColor="danger"
+              formData={formData}
+              errors={errors}
+              hasErrors={hasErrors}
+              isLoading={addExpenseLoading}
+              handleOnChange={handleOnChange}
+              handleDateChange={handleDateChange}
+              handleSubmit={handleSubmit}
+            />
+          </div>
+        </div>
+
+        <div className="lg:col-span-8 bg-white rounded-2xl shadow-sm p-6">
+          <TransactionTable
+            data={data?.expenses}
+            name="expense"
+            rowsPerPage={10}
+            chipColorMap={chipColorMap}
+            isLoading={getExpenseLoading}
+            totalPages={totalPages}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
           />
-        </span>
-      </h3>
-      <section className="w-full h-full flex flex-col lg:flex-row px-6 md:px-8 lg:px-12 pt-6 space-y-8 lg:space-y-0 lg:space-x-8">
-        <TransactionForm
-          button="Add Expense"
-          categories={expenseCategories}
-          btnColor="danger"
-          formData={formData}
-          errors={errors}
-          hasErrors={hasErrors}
-          isLoading={addExpenseLoading}
-          handleOnChange={handleOnChange}
-          handleDateChange={handleDateChange}
-          handleSubmit={handleSubmit}
-        />
-        <TransactionTable
-          data={data?.expenses}
-          name="expense"
-          rowsPerPage={10}
-          chipColorMap={chipColorMap}
-          isLoading={getExpenseLoading}
-          totalPages={totalPages}
-          currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
-        />
-      </section>
-    </>
+        </div>
+      </div>
+    </div>
   );
 };
 

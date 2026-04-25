@@ -24,6 +24,9 @@ const deleteTransactionModalSlice = createSlice({
     },
     closeModal: (state) => {
       state.isOpen = false;
+      state._id = "";
+      state.title = "";
+      state.type = "";
     },
   },
 });

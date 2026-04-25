@@ -36,7 +36,7 @@ const NotFound = () => {
       </p>
       <Button
         color="primary"
-        onClick={() => navigate("/")}
+        onPress={() => navigate("/")}
         className="mt-6 text-lg"
         startContent={<Home />}
       >

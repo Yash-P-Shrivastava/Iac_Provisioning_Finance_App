@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { object, string } from "yup";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 
 import {
   useLoginMutation,
@@ -25,7 +25,7 @@ const Login = () => {
   });
   const [errors, setErrors] = useState({});
   const [otp, setOtp] = useState("");
-  const [step, setStep] = useState(1); // 1: Login, 2: OTP verification
+  const [step, setStep] = useState(1);
   const [countdown, setCountdown] = useState(
     parseInt(localStorage.getItem("otpCountdown")) || 0
   );
@@ -33,7 +33,6 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Mutations
   const [login, { isLoading: loginLoading }] = useLoginMutation();
   const [sendOtp] = useSendOtpMutation();
   const [verifyOtp, { isLoading: verifyOtpLoading }] = useVerifyOtpMutation();
@@ -64,17 +63,16 @@ const Login = () => {
       toast.success(res.message || "Logged in successfully!");
       navigate("/");
     } catch (error) {
-      console.error(error);
       if (error?.data?.user?.verified === false) {
         await sendOtp({ email });
         dispatch(updateLoader(60));
         setCountdown(60);
         localStorage.setItem("otpCountdown", "60");
         setStep(2);
-        toast.error(error?.data?.error || "Please verify your email to proceed.");
+        toast.error(error?.data?.error || "Please verify your email.");
         return;
       }
-      toast.error(error?.data?.error || "Unexpected Internal Server Error!");
+      toast.error(error?.data?.error || "Unexpected error!");
     } finally {
       dispatch(updateLoader(100));
     }
@@ -84,10 +82,10 @@ const Login = () => {
     e.preventDefault();
     try {
       dispatch(updateLoader(40));
-      const otpRes = await verifyOtp({ email, otp }).unwrap();
+      const response = await verifyOtp({ email, otp }).unwrap();
 
       dispatch(updateLoader(70));
-      toast.success(otpRes.message || "Email verified! Please login.");
+      toast.success(response.message || "Email verified!");
       setStep(1);
     } catch (error) {
       toast.error(error?.data?.error || "Invalid OTP");
@@ -100,12 +98,12 @@ const Login = () => {
     e.preventDefault();
     try {
       dispatch(updateLoader(40));
-      const otpRes = await sendOtp({ email }).unwrap();
+      await sendOtp({ email }).unwrap();
       dispatch(updateLoader(70));
-      toast.success("OTP sent to your email!");
+      toast.success("OTP sent!");
       setCountdown(60);
       localStorage.setItem("otpCountdown", "60");
-    } catch (error) {
+    } catch {
       toast.error("Failed to resend OTP");
     } finally {
       dispatch(updateLoader(100));
@@ -126,62 +124,53 @@ const Login = () => {
   }, [countdown]);
 
   return (
-    /* Using min-h-screen instead of h-[90vh] ensures that if the form grows, 
-       it won't overlap or get cut off. 
-    */
-    <section className="min-h-screen w-full flex items-center justify-center bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
+    <section className="min-h-screen w-full flex items-center justify-center bg-slate-50 px-4 py-10">
       <div className="w-full max-w-5xl">
         <UserAuthForm
           title={step === 1 ? "Welcome Back!" : "Verify your Email"}
           imageSrc={loginImg}
           imageTitle="Start using Now."
           alt="login image"
+          onSubmit={step === 1 ? handleSubmit : handleOtpSubmit}
           form={
-  /* Increased gap-y-7 to give labels room to breathe */
-  <div className="flex flex-col gap-y-7 w-full pt-4">
-    {step === 1 ? (
-      <>
-        <EmailInput
-          value={email}
-          onChange={handleOnChange}
-          errors={errors}
-          labelPlacement="outside" // Forces label above the box
-          classNames={{
-            label: "text-white font-bold mb-2", 
-            inputWrapper: "bg-white h-12 shadow-md",
-            input: "text-slate-900 placeholder:text-slate-400"
-          }}
-        />
-        <PasswordInput
-          value={password}
-          onChange={handleOnChange}
-          errors={errors}
-          labelPlacement="outside" // Forces label above the box
-          classNames={{
-            label: "text-white font-bold mb-2",
-            inputWrapper: "bg-white h-12 shadow-md",
-            input: "text-slate-900"
-          }}
-        />
-        <SubmitButton
-          isLoading={loginLoading}
-          handleSubmit={handleSubmit}
-          isDisabled={!email || !password || hasErrors}
-        />
-      </>
-    ) : (
-      <OtpForm
-        otp={otp}
-        setOtp={setOtp}
-        email={email}
-        handleOtpSubmit={handleOtpSubmit}
-        resendOtp={resendOtp}
-        countdown={countdown}
-        verifyOtpLoading={verifyOtpLoading}
-      />
-    )}
-  </div>
-}
+            <div className="flex flex-col gap-y-7 w-full pt-4">
+              {step === 1 ? (
+                <>
+                  {/* FIX: wrapped inputs to ensure spacing */}
+                  <div className="w-full">
+                    <EmailInput
+                      value={email}
+                      onChange={handleOnChange}
+                      errors={errors}
+                    />
+                  </div>
+
+                  <div className="w-full">
+                    <PasswordInput
+                      value={password}
+                      onChange={handleOnChange}
+                      errors={errors}
+                    />
+                  </div>
+
+                  <SubmitButton
+                    isLoading={loginLoading}
+                    isDisabled={!email || !password || hasErrors}
+                  />
+                </>
+              ) : (
+                <OtpForm
+                  otp={otp}
+                  setOtp={setOtp}
+                  email={email}
+                  handleOtpSubmit={handleOtpSubmit}
+                  resendOtp={resendOtp}
+                  countdown={countdown}
+                  verifyOtpLoading={verifyOtpLoading}
+                />
+              )}
+            </div>
+          }
           footer={step === 1 && "Don't have an account?"}
           footerLink={step === 1 && "Register"}
           footerLinkPath={step === 1 && "/register"}

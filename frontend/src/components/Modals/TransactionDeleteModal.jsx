@@ -31,14 +31,21 @@ const TransactionDeleteModal = () => {
   const handleDelete = async (e) => {
     try {
       e.preventDefault();
+
       dispatch(updateLoader(40));
       const res = await deleteTransaction(_id).unwrap();
 
       dispatch(updateLoader(60));
       await dispatch(setRefetch(true));
       await dispatch(closeModal());
-      toast.success(res.message || `${type.charAt(0).toUpperCase() + type.slice(1)} deleted!`);
+      toast.success(
+        res.message ||
+          (type === "income"
+            ? "Income deleted successfully!"
+            : "Expense deleted successfully!")
+      );
     } catch (error) {
+      console.log(error);
       toast.error(error?.data?.error || "Unexpected Internal Server Error!");
     } finally {
       await dispatch(setRefetch(false));
@@ -52,49 +59,51 @@ const TransactionDeleteModal = () => {
       onClose={() => dispatch(closeModal())}
       placement="center"
       backdrop="blur"
+      hideCloseButton={false}
       classNames={{
-        base: "bg-white rounded-3xl border border-slate-100 p-2",
-        header: "pt-6 px-6",
-        body: "pb-6 px-6",
-        footer: "bg-slate-50/50 rounded-b-3xl px-6 py-4 mt-2",
+        base: "bg-white",
+        backdrop: "bg-slate-900/30",
       }}
     >
       <ModalContent>
-        <>
+        {(onClose) => (
+          <>
           <ModalHeader>
-            <div className="flex flex-col gap-1">
-              <h4 className="text-xl font-bold text-slate-900 leading-tight">
-                Delete {title}?
-              </h4>
-              <p className="text-xs font-bold text-rose-500 uppercase tracking-widest">
-                Permanent Action
-              </p>
-            </div>
+            <h4 className="text-xl text-error tracking-relaxed">
+              Are you sure you want to delete {title}?
+            </h4>
           </ModalHeader>
           <ModalBody>
-            <p className="text-slate-600 leading-relaxed">
-              This will permanently remove this <span className="font-bold text-slate-900">{type}</span> entry. 
-              Data recovery is not possible once this process is complete.
+            <p className="text-sm">
+              Confirm deletion: This action permanently removes the selected{" "}
+              {type} entry. Once deleted, it cannot be recovered. Cancel to
+              retain the {type} entry.
             </p>
           </ModalBody>
           <ModalFooter>
             <Button
-              variant="light"
-              onPress={() => dispatch(closeModal())}
-              className="text-slate-500 font-bold px-6"
+              color="danger"
+              variant="flat"
+              onPress={() => {
+                dispatch(closeModal());
+                onClose();
+              }}
+              className="text-base"
             >
-              No, Keep it
+              Cancel
             </Button>
             <Button
-              className="bg-rose-500 text-white font-bold px-8 shadow-lg shadow-rose-200 hover:bg-rose-600 transition-all active:scale-95"
+              color="primary"
               onClick={handleDelete}
               isLoading={isLoading}
-              endContent={<Delete className="size-4" />}
+              className="text-base"
+              endContent={<Delete />}
             >
-              Delete Permanently
+              Delete
             </Button>
           </ModalFooter>
         </>
+        )}
       </ModalContent>
     </Modal>
   );

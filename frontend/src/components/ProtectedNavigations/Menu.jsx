@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 
@@ -24,19 +24,13 @@ const Menu = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const toggleMenu = () => {
-    setIsMenuOpen((prev) => !prev);
-  };
-
   return (
-    <Dropdown onClose={() => setIsMenuOpen((prev) => !prev)}>
+    <Dropdown>
       <DropdownTrigger>
         <Button
           color="primary"
           startContent={<MenuIcon />}
-          onClick={toggleMenu}
+          aria-label="Open navigation menu"
           isIconOnly
         />
       </DropdownTrigger>

@@ -5,6 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import "./index.css";
 
 import TopLoadingBar from "./components/TopLoadingBar";
+
 import {
   Home,
   NotFound,
@@ -16,12 +17,16 @@ import {
   Expenses,
   Settings,
 } from "./pages";
+
 import { PublicRoutes, ProtectedRoutes } from "./components/Guards";
+import AIAssistant from "./pages/ProtectedPages/AIAssistant";
+
 
 const App = () => {
   return (
     <>
       <TopLoadingBar />
+
       <ToastContainer
         position="bottom-right"
         autoClose={2500}
@@ -30,18 +35,22 @@ const App = () => {
         transition={Slide}
         toastClassName="font-outfit max-w-xs rounded-lg ml-4 sm:ml-0 mb-2"
       />
+
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/" element={<PublicRoutes />}>
+
+        <Route element={<PublicRoutes />}>
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
         </Route>
-        <Route path="/" element={<ProtectedRoutes />}>
+
+        <Route element={<ProtectedRoutes />}>
           <Route path="/dashboard" element={<Dashboard />}>
-            <Route path="/dashboard" element={<MainDashboard />} />
-            <Route path="/dashboard/incomes" element={<Incomes />} />
-            <Route path="/dashboard/expenses" element={<Expenses />} />
-            <Route path="/dashboard/settings" element={<Settings />} />
+            <Route index element={<MainDashboard />} />
+            <Route path="incomes" element={<Incomes />} />
+            <Route path="expenses" element={<Expenses />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="ai" element={<AIAssistant />} />
           </Route>
         </Route>
 

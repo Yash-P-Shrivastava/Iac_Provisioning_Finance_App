@@ -29,7 +29,7 @@ import {
 import validateForm from "../../utils/validateForm";
 
 const Settings = () => {
-  const [selected, setSelected] = useState("acountInfo");
+  const [selected, setSelected] = useState("accountInfo");
   const [accountInfoData, setAccountInfoData] = useState({
     username: "",
     email: "",
@@ -141,30 +141,7 @@ const Settings = () => {
   const {
     data,
     isLoading: userDetailsLoading,
-    refetch,
   } = useGetUserDetailsQuery();
-  const getUserDetails = async () => {
-    try {
-      await refetch();
-      if (data?.user) {
-        setAccountInfoData((prev) => ({
-          ...prev,
-          username: data.user.username,
-        }));
-        setAccountInfoData((prev) => ({ ...prev, email: data.user.email }));
-        setInitialAccountInfoData({
-          username: data.user.username,
-          email: data.user.email,
-        });
-      }
-    } catch (error) {
-      console.log(error);
-      await toast.error(
-        error?.data?.error ||
-          "An unexpected error occurred while fetching data!"
-      );
-    }
-  };
 
   const hasAccountInfoErrors = Object.values(accountInfoErrors).some(
     (error) => !!error
@@ -174,7 +151,18 @@ const Settings = () => {
   );
 
   useEffect(() => {
-    getUserDetails();
+    if (!data?.user) {
+      return;
+    }
+
+    setAccountInfoData({
+      username: data.user.username,
+      email: data.user.email,
+    });
+    setInitialAccountInfoData({
+      username: data.user.username,
+      email: data.user.email,
+    });
   }, [data]);
 
   return (
@@ -221,7 +209,7 @@ const Settings = () => {
                   <Button
                     fullWidth
                     color="primary"
-                    onClick={handleUpdateUser}
+                    onPress={handleUpdateUser}
                     isDisabled={hasAccountInfoErrors}
                     isLoading={updateUserLoading}
                     endContent={<UpdateProfile />}
@@ -265,7 +253,7 @@ const Settings = () => {
                       fullWidth
                       color="primary"
                       isLoading={resetPasswordLoading}
-                      onClick={handleResetPassword}
+                      onPress={handleResetPassword}
                       isDisabled={
                         !oldPassword || !newPassword || hasResetPassErrors
                       }

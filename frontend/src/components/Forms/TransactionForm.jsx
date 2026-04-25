@@ -1,129 +1,179 @@
 import React from "react";
-import { Input, Button, Select, SelectItem, DatePicker } from "@nextui-org/react";
-import { FaPlus } from "react-icons/fa";
+import moment from "moment";
+import { parseDate } from "@internationalized/date";
+import { Add, Amount, Category, Title } from "../../utils/Icons";
 
 const TransactionForm = ({
-  button = "Submit",
-  categories = [],
-  btnColor = "primary",
-  formData = {},
-  errors = {},
-  hasErrors = false,
-  isLoading = false,
+  categories,
+  formData,
+  button,
+  btnColor,
+  hasErrors,
+  errors,
+  isLoading,
   handleOnChange,
   handleDateChange,
   handleSubmit,
 }) => {
-  /** ✅ Safe fallback values (prevents undefined crashes) */
-  const safeForm = {
-    title: formData.title || "",
-    amount: formData.amount ?? "",
-    category: formData.category || "",
-    date: formData.date || null,
-    description: formData.description || "",
-  };
+  const { title, amount, description, category, date } = formData;
+  const dateValue =
+    date && typeof date === "object" && "year" in date
+      ? `${date.year}-${String(date.month).padStart(2, "0")}-${String(
+          date.day
+        ).padStart(2, "0")}`
+      : moment().format("YYYY-MM-DD");
+
+  const buttonStyles =
+    btnColor === "danger"
+      ? "bg-red-500 hover:bg-red-600"
+      : "bg-emerald-500 hover:bg-emerald-600";
+
+  const baseFieldClassName =
+    "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white";
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col h-full">
-      {/* Scrollable Inputs */}
-      <div className="flex flex-col gap-6 overflow-y-auto pr-2 pb-4">
-
-        {/* Title */}
-        <Input
-          name="title"
-          label="Title"
-          placeholder="Enter transaction title"
-          variant="bordered"
-          size="lg"
-          value={safeForm.title}
-          onChange={handleOnChange}
-          isInvalid={!!errors.title}
-          errorMessage={errors.title}
-        />
-
-        {/* Amount */}
-        <Input
-          name="amount"
-          type="number"
-          label="Amount"
-          placeholder="0.00"
-          variant="bordered"
-          size="lg"
-          value={safeForm.amount}
-          onChange={(e) => {
-            /** ✅ Always send number to parent */
-            const value = e.target.value;
-            handleOnChange({
-              target: {
-                name: "amount",
-                value: value === "" ? "" : Number(value),
-              },
-            });
-          }}
-          isInvalid={!!errors.amount}
-          errorMessage={errors.amount}
-        />
-
-        {/* Category */}
-        <Select
-          label="Category"
-          placeholder="Select category"
-          variant="bordered"
-          size="lg"
-          selectedKeys={safeForm.category ? [safeForm.category] : []}
-          isInvalid={!!errors.category}
-          errorMessage={errors.category}
-          onSelectionChange={(keys) => {
-            const value = Array.from(keys)[0] || "";
-            handleOnChange({
-              target: { name: "category", value },
-            });
-          }}
+    <form onSubmit={handleSubmit} className="w-full flex flex-col gap-5">
+      <div className="w-full">
+        <label
+          htmlFor="transaction-title"
+          className="mb-2 block text-sm font-semibold text-slate-700"
         >
-          {categories.map((item) => (
-            <SelectItem key={item.value}>{item.label}</SelectItem>
-          ))}
-        </Select>
+          Title
+        </label>
+        <div className="relative">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+            <Title />
+          </span>
+          <input
+            id="transaction-title"
+            type="text"
+            name="title"
+            value={title}
+            onChange={handleOnChange}
+            placeholder="Enter the title"
+            className={`${baseFieldClassName} pl-12`}
+          />
+        </div>
+        {errors?.title && (
+          <p className="mt-1 text-sm text-red-500">{errors.title}</p>
+        )}
+      </div>
 
-        {/* Date */}
-        <DatePicker
-          label="Date"
-          variant="bordered"
-          size="lg"
-          value={safeForm.date}
-          onChange={handleDateChange}
-          isInvalid={!!errors.date}
-          errorMessage={errors.date}
-        />
+      <div className="w-full">
+        <label
+          htmlFor="transaction-amount"
+          className="mb-2 block text-sm font-semibold text-slate-700"
+        >
+          Amount
+        </label>
+        <div className="relative">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+            <Amount />
+          </span>
+          <input
+            id="transaction-amount"
+            type="number"
+            name="amount"
+            value={amount}
+            onChange={handleOnChange}
+            placeholder="Enter the amount"
+            className={`${baseFieldClassName} pl-12`}
+          />
+        </div>
+        {errors?.amount && (
+          <p className="mt-1 text-sm text-red-500">{errors.amount}</p>
+        )}
+      </div>
 
-        {/* Description */}
-        <Input
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div className="w-full">
+          <label
+            htmlFor="transaction-category"
+            className="mb-2 block text-sm font-semibold text-slate-700"
+          >
+            Category
+          </label>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+              <Category />
+            </span>
+            <select
+              id="transaction-category"
+              name="category"
+              value={category}
+              onChange={handleOnChange}
+              className={`${baseFieldClassName} pl-12`}
+            >
+              <option value="">Select the category</option>
+              {categories.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {errors?.category && (
+            <p className="mt-1 text-sm text-red-500">{errors.category}</p>
+          )}
+        </div>
+
+        <div className="w-full">
+          <label
+            htmlFor="transaction-date"
+            className="mb-2 block text-sm font-semibold text-slate-700"
+          >
+            Select the date
+          </label>
+          <input
+            id="transaction-date"
+            type="date"
+            value={dateValue}
+            onChange={(e) => handleDateChange(parseDate(e.target.value))}
+            className={baseFieldClassName}
+          />
+          {errors?.date && (
+            <p className="mt-1 text-sm text-red-500">{errors.date}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="w-full">
+        <label
+          htmlFor="transaction-description"
+          className="mb-2 block text-sm font-semibold text-slate-700"
+        >
+          Description
+        </label>
+        <textarea
+          id="transaction-description"
           name="description"
-          label="Description"
-          placeholder="Add some details..."
-          variant="bordered"
-          size="lg"
-          value={safeForm.description}
+          value={description}
           onChange={handleOnChange}
-          isInvalid={!!errors.description}
-          errorMessage={errors.description}
+          placeholder="Enter your description"
+          rows={4}
+          className={`${baseFieldClassName} min-h-32 resize-none`}
         />
+        {errors?.description && (
+          <p className="mt-1 text-sm text-red-500">{errors.description}</p>
+        )}
       </div>
 
-      {/* Submit Button */}
-      <div className="pt-4 border-t mt-auto">
-        <Button
-          type="submit"
-          color={btnColor}
-          size="lg"
-          isLoading={isLoading}
-          isDisabled={hasErrors || isLoading}
-          className="w-full font-semibold"
-          startContent={!isLoading && <FaPlus />}
-        >
-          {isLoading ? "Processing..." : button}
-        </Button>
-      </div>
+      <button
+        type="submit"
+        disabled={
+          isLoading ||
+          !title ||
+          !amount ||
+          !category ||
+          !date ||
+          !description ||
+          hasErrors
+        }
+        className={`mt-2 flex h-12 w-full items-center justify-center gap-3 rounded-xl text-lg font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-slate-300 ${buttonStyles}`}
+      >
+        <Add />
+        {isLoading ? "Saving..." : button}
+      </button>
     </form>
   );
 };

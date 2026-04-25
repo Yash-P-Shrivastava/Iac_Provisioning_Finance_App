@@ -29,6 +29,22 @@ import { useUpdateExpenseMutation } from "../../features/api/apiSlices/expenseAp
 import { useUpdateIncomeMutation } from "../../features/api/apiSlices/incomeApiSlice";
 import validateForm from "../../utils/validateForm";
 
+const getSafeCalendarDate = (value) => {
+  const fallbackDate = moment().format("YYYY-MM-DD");
+
+  if (!value) {
+    return parseDate(fallbackDate);
+  }
+
+  const normalizedDate = moment(value);
+
+  if (!normalizedDate.isValid()) {
+    return parseDate(fallbackDate);
+  }
+
+  return parseDate(normalizedDate.format("YYYY-MM-DD"));
+};
+
 const TransactionViewAndUpdateModal = () => {
   const data = useSelector((state) => state.transactionViewAndUpdateModal);
   const {
@@ -46,10 +62,20 @@ const TransactionViewAndUpdateModal = () => {
     amount: "",
     description: "",
     category: "",
-    date: parseDate(moment().format("YYYY-MM-DD")),
+    date: getSafeCalendarDate(),
   });
 
   const [errors, setErrors] = useState({});
+  const fieldClassNames = {
+    label: "text-slate-700 font-semibold mb-1",
+    inputWrapper:
+      "bg-slate-50 border border-slate-200 shadow-none data-[hover=true]:border-slate-300 group-data-[focus=true]:border-primary",
+    input: "text-slate-900 placeholder:text-slate-400",
+    trigger:
+      "bg-slate-50 border border-slate-200 shadow-none data-[hover=true]:border-slate-300",
+    value: "text-slate-900",
+    errorMessage: "text-error font-calSans",
+  };
 
   const incomeCategories = [
     { label: "Salary", value: "salary" },
@@ -75,8 +101,7 @@ const TransactionViewAndUpdateModal = () => {
       .required("Title is required.")
       .min(5, "Title must be atleast 5 characters long.")
       .max(15, "Title should not be more than 15 characters."),
-    amount: number()
-      .typeError("Amount must be a number")
+    amount: number("Amount must be a number")
       .required("Amount is required.")
       .positive("Amount must be positive."),
     description: string()
@@ -86,6 +111,12 @@ const TransactionViewAndUpdateModal = () => {
     date: date().required("Date is required."),
     category: string()
       .required("Category is required.")
+      .oneOf(
+        type === "income"
+          ? incomeCategories.map((category) => category.value)
+          : expenseCategories.map((category) => category.value),
+        "Invalid category selected."
+      ),
   });
 
   const handleOnChange = (e) => {
@@ -93,70 +124,90 @@ const TransactionViewAndUpdateModal = () => {
       ...prev,
       [e.target.name]: e.target.value,
     }));
+
     validateForm(e.target.name, e.target.value, validationSchema, setErrors);
   };
-
   const handleDateChange = (newDate) => {
-    setFormData({ ...formData, date: newDate });
+    setFormData({
+      ...formData,
+      date: newDate,
+    });
   };
 
-  const { title, amount, category, description, date: transactionDate } = formData;
-  const mutationHook = type === "income" ? useUpdateIncomeMutation : useUpdateExpenseMutation;
+  const {
+    title,
+    amount,
+    category,
+    description,
+    date: transactionDate,
+  } = formData;
+  const mutationHook =
+    type === "income" ? useUpdateIncomeMutation : useUpdateExpenseMutation;
   const [updateTransaction, { isLoading }] = mutationHook();
 
   const handleUpdate = async (e) => {
     try {
       e.preventDefault();
-      const initialTransactionDate = moment(initialTransaction?.date).format("YYYY-MM-DD");
-      const formattedDate = moment({
+      const initialTransactionDate = await moment(
+        initialTransaction?.date
+      ).format("YYYY-MM-DD");
+
+      const formattedDate = await moment({
         year: formData.date.year,
         month: formData.date.month - 1,
         day: formData.date.day,
       }).format("YYYY-MM-DD");
-      
-      let updatedFormData = { ...formData, date: formattedDate };
+      let updatedFormData = {
+        ...formData,
+        date: formattedDate,
+      };
 
-      if (JSON.stringify(updatedFormData) === JSON.stringify({ ...initialTransaction, date: initialTransactionDate })) {
+      const isDataChanged =
+        (await JSON.stringify(updatedFormData)) ===
+        JSON.stringify({ ...initialTransaction, date: initialTransactionDate });
+
+      if (isDataChanged) {
         toast.error("No changes detected.");
         return;
       }
 
       dispatch(updateLoader(40));
-      const res = await updateTransaction({ _id, data: updatedFormData }).unwrap();
+      const res = await updateTransaction({
+        _id,
+        data: updatedFormData,
+      }).unwrap();
 
       dispatch(updateLoader(60));
-      dispatch(setRefetch(true));
-      dispatch(closeModal());
-      toast.success(res.message || "Transaction updated!");
+      await dispatch(setRefetch(true));
+      await dispatch(closeModal());
+
+      toast.success(
+        res.message ||
+          (type === "income"
+            ? "Income updated successfully!"
+            : "Expense updated successfully!")
+      );
     } catch (error) {
-      toast.error(error?.data?.error || "Unexpected Error!");
+      console.log(error);
+      toast.error(error?.data?.error || "Unexpected Internal Server Error!");
     } finally {
-      dispatch(setRefetch(false));
+      await dispatch(setRefetch(false));
       dispatch(updateLoader(100));
     }
   };
 
-useEffect(() => {
-  if (initialTransaction && initialTransaction.date) {
-    try {
-      // Ensure the date is in YYYY-MM-DD format before parsing
-      const formattedDate = moment(initialTransaction.date).format("YYYY-MM-DD");
-      
-      setFormData({
-        ...initialTransaction,
-        date: parseDate(formattedDate),
-      });
-      setMainTitle(initialTransaction.title);
-    } catch (error) {
-      console.error("Date parsing failed:", error);
-      // Fallback to today if parsing fails
-      setFormData({
-        ...initialTransaction,
-        date: parseDate(moment().format("YYYY-MM-DD")),
-      });
+  useEffect(() => {
+    if (!isOpen || !initialTransaction) {
+      return;
     }
-  }
-}, [initialTransaction]);
+
+    setFormData({
+      ...initialTransaction,
+      date: getSafeCalendarDate(initialTransaction?.date),
+    });
+    setMainTitle(initialTransaction?.title);
+  }, [initialTransaction, isOpen]);
+
   const hasErrors = Object.values(errors).some((error) => !!error);
 
   return (
@@ -165,146 +216,157 @@ useEffect(() => {
       onClose={() => dispatch(closeModal())}
       placement="center"
       backdrop="blur"
-      size="lg"
+      size="3xl"
+      hideCloseButton={false}
       classNames={{
-        base: "bg-white rounded-3xl p-2",
-        header: "border-b border-slate-100",
-        footer: "border-t border-slate-100",
+        base: "bg-white",
+        backdrop: "bg-slate-900/30",
       }}
     >
       <ModalContent>
-        <>
-          <ModalHeader className="flex flex-col gap-1 py-6">
-            <h4 className="text-2xl font-bold text-slate-900 capitalize">
-              {isDisabled ? "Transaction Details" : `Edit ${mainTitle}`}
+        {(onClose) => (
+          <>
+          <ModalHeader className="flex justify-center items-center">
+            <h4 className="text-2xl tracking-relaxed capitalize">
+              {isDisabled ? `${mainTitle} Overview` : `Update ${mainTitle}`}
             </h4>
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-widest">
-                {type} Management
-            </p>
           </ModalHeader>
-          
-          <ModalBody className="gap-y-6 py-8">
+          <ModalBody>
             <Input
               label="Title"
-              name="title"
               labelPlacement="outside"
-              placeholder="e.g. Monthly Rent"
+              name="title"
+              placeholder="Enter the title"
               isDisabled={isDisabled}
               value={title}
               onChange={handleOnChange}
               isInvalid={!!errors.title}
               errorMessage={errors?.title}
-              startContent={<Title className="text-slate-400" />}
-              classNames={{
-                label: "font-bold text-slate-700",
-                inputWrapper: "bg-slate-50 border-slate-200 hover:border-primary transition-colors",
-              }}
+              startContent={<Title />}
+              className="w-full"
+              classNames={fieldClassNames}
             />
-
             <Input
               type="number"
               label="Amount"
-              name="amount"
               labelPlacement="outside"
-              placeholder="0.00"
+              name="amount"
+              placeholder="Enter the amount"
               isDisabled={isDisabled}
               value={amount}
               onChange={handleOnChange}
               isInvalid={!!errors.amount}
               errorMessage={errors?.amount}
-              startContent={<Amount className="text-slate-400" />}
-              endContent={<span className="text-slate-400 text-sm font-bold">USD</span>}
-              classNames={{
-                label: "font-bold text-slate-700",
-                inputWrapper: "bg-slate-50 border-slate-200",
-              }}
+              startContent={<Amount />}
+              className="w-full"
+              classNames={fieldClassNames}
             />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-slate-700">Category</label>
-                {isDisabled ? (
-                  <Input
-                    name="category"
-                    isDisabled
-                    value={category}
-                    startContent={<Category className="text-slate-400" />}
-                    classNames={{ inputWrapper: "bg-slate-50" }}
-                  />
-                ) : (
-                  <Select
-                    name="category"
-                    placeholder="Select category"
-                    selectedKeys={[category]}
-                    onChange={handleOnChange}
-                    isInvalid={!!errors.category}
-                    startContent={<Category className="text-slate-400" />}
-                    classNames={{ trigger: "bg-slate-50 border-slate-200" }}
-                  >
-                    {(type === "income" ? incomeCategories : expenseCategories).map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                 <label className="text-sm font-bold text-slate-700">Date</label>
-                 <DatePicker 
-                      // ... other props
-                      showMonthAndYearPickers
-                      popoverProps={{
-                        placement: "bottom",
-                        triggerScaleOnOpen: false,
-                        offset: 10,
-                      }}
-                    />
-              </div>
+            <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-2">
+              {isDisabled ? (
+                <Input
+                  type="text"
+                  label="Category"
+                  labelPlacement="outside"
+                  name="category"
+                  isDisabled={isDisabled}
+                  value={category}
+                  onChange={handleOnChange}
+                  startContent={<Category />}
+                  className="w-full"
+                  classNames={fieldClassNames}
+                />
+              ) : (
+                <Select
+                  name="category"
+                  label="Category"
+                  labelPlacement="outside"
+                  placeholder="Select the category"
+                  selectedKeys={[category]}
+                  onChange={handleOnChange}
+                  isInvalid={!!errors.category}
+                  errorMessage={errors?.category}
+                  startContent={<Category />}
+                  className="w-full"
+                  classNames={fieldClassNames}
+                  aria-label="Transaction category"
+                >
+                  {type === "income"
+                    ? incomeCategories.map((category) => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
+                        </SelectItem>
+                      ))
+                    : expenseCategories.map((category) => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                </Select>
+              )}
+              <DatePicker
+                name="date"
+                label="Date"
+                labelPlacement="outside"
+                placeholder="Enter your date"
+                isDisabled={isDisabled}
+                value={transactionDate}
+                onChange={handleDateChange}
+                isInvalid={!!errors.date}
+                errorMessage={errors?.date}
+                className="w-full"
+                classNames={fieldClassNames}
+                aria-label="Transaction date"
+              />
             </div>
-
             <Textarea
               name="description"
               label="Description"
               labelPlacement="outside"
-              placeholder="Add more details about this transaction..."
+              placeholder="Enter your description"
               isDisabled={isDisabled}
-              maxRows={3}
+              maxRows={4}
               value={description}
               onChange={handleOnChange}
               isInvalid={!!errors.description}
               errorMessage={errors?.description}
-              classNames={{
-                label: "font-bold text-slate-700",
-                inputWrapper: "bg-slate-50",
-              }}
+              className="w-full"
+              classNames={fieldClassNames}
             />
           </ModalBody>
-
-          <ModalFooter className="py-6">
+          <ModalFooter>
             <Button
-              variant="light"
-              onPress={() => dispatch(closeModal())}
-              className="text-slate-500 font-bold px-6"
+              color="danger"
+              variant="flat"
+              onPress={() => {
+                dispatch(closeModal());
+                onClose();
+              }}
+              className="text-base"
             >
-              {isDisabled ? "Close" : "Discard"}
+              {isDisabled ? "Close" : "Cancel"}
             </Button>
             {!isDisabled && (
               <Button
-                className={`text-white font-bold px-8 shadow-lg transition-transform active:scale-95 ${
-                    type === "income" ? "bg-emerald-500 shadow-emerald-200" : "bg-rose-500 shadow-rose-200"
-                }`}
-                endContent={<Edit className="size-4" />}
+                color={type === "income" ? "success" : "danger"}
+                endContent={<Edit />}
+                className="min-w-40 text-white data-[disabled=true]:opacity-70"
                 isLoading={isLoading}
                 onClick={handleUpdate}
-                isDisabled={!title || !amount || !category || hasErrors}
+                isDisabled={
+                  !title ||
+                  !amount ||
+                  !category ||
+                  !date ||
+                  !description ||
+                  hasErrors
+                }
               >
-                Save {type === "income" ? "Income" : "Expense"}
+                Update {type === "income" ? "Income" : "Expense"}
               </Button>
             )}
           </ModalFooter>
         </>
+        )}
       </ModalContent>
     </Modal>
   );

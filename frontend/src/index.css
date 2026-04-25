@@ -30,18 +30,6 @@
     @apply bg-slate-50 text-slate-900 antialiased;
   }
 
-  /* 1. Global Label Styling: High contrast for your blue background */
-  label {
-    @apply block text-white font-bold mb-2 text-sm tracking-wide;
-    position: relative !important; /* Overrides any absolute positioning */
-  }
-
-  /* Ensure the input box has a defined height so it doesn't collapse */
-  input {
-    @apply w-full bg-white text-slate-900 px-4 py-3 rounded-xl min-h-[48px] block;
-    appearance: none;
-  }
-
   /* 3. Global SVG sizing */
   svg {
     @apply size-5 inline-block;

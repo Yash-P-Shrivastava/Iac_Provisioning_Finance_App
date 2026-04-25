@@ -1,16 +1,19 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { Provider } from 'react-redux';
-import { BrowserRouter } from 'react-router-dom';
-import store from './app/store'; // Imported without { } because of 'export default'
-import App from './App';
-import './index.css';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { NextUIProvider } from "@nextui-org/react";
+import { Provider } from "react-redux";
+import { BrowserRouter } from "react-router-dom";
+import store from "./app/store";
+import App from "./App";
+import "./index.css";
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <Provider store={store}>
       <BrowserRouter>
-        <App />
+        <NextUIProvider>
+          <App />
+        </NextUIProvider>
       </BrowserRouter>
     </Provider>
   </React.StrictMode>

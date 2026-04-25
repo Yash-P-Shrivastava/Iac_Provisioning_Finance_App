@@ -32,6 +32,10 @@ const transactionViewAndUpdateModal = createSlice({
     },
     closeModal: (state) => {
       state.isOpen = false;
+      state.type = "";
+      state.isDisabled = false;
+      state._id = "";
+      state.transaction = { ...initialState.transaction };
     },
   },
 });

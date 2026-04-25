@@ -5,12 +5,11 @@ import moment from "moment";
 import { parseDate } from "@internationalized/date";
 import { NumericFormat } from "react-number-format";
 
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import {
   useGetIncomeQuery,
   useAddIncomeMutation,
 } from "../../features/api/apiSlices/incomeApiSlice";
-import { updateLoader } from "../../features/loader/loaderSlice";
 
 import TransactionForm from "../../components/Forms/TransactionForm";
 import validateForm from "../../utils/validateForm";
@@ -26,9 +25,13 @@ const Incomes = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [totalIncome, setTotalIncome] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const isRefetchDeleteModal = useSelector(
+    (state) => state.deleteTransactionModal.refetch
+  );
+  const isRefetchViewAndUpdateModal = useSelector(
+    (state) => state.transactionViewAndUpdateModal.refetch
+  );
 
   const incomeCategories = [
     { label: "Salary", value: "salary" },
@@ -48,7 +51,6 @@ const Incomes = () => {
     category: string().required("Category is required."),
   });
 
-  const dispatch = useDispatch();
   const [addIncome, { isLoading }] = useAddIncomeMutation();
 
   const { data, refetch } = useGetIncomeQuery({
@@ -106,13 +108,14 @@ const Incomes = () => {
   };
 
   useEffect(() => {
-    if (data) {
-      setTotalIncome(data.totalIncome || 0);
-      setTotalPages(data.pagination?.totalPages || 1);
+    if (isRefetchDeleteModal || isRefetchViewAndUpdateModal) {
+      refetch();
     }
-  }, [data]);
+  }, [isRefetchDeleteModal, isRefetchViewAndUpdateModal, refetch]);
 
   const hasErrors = Object.values(errors).some((e) => e);
+  const totalIncome = data?.totalIncome || 0;
+  const totalPages = data?.pagination?.totalPages || 1;
 
   return (
     <div className="flex flex-col gap-8 p-6 max-w-[1600px] mx-auto">
@@ -137,7 +140,7 @@ const Incomes = () => {
 
         {/* Form */}
         <div className="lg:col-span-4">
-          <div className="bg-white rounded-2xl shadow-sm p-6 h-[calc(100vh-200px)] flex flex-col">
+          <div className="bg-white rounded-2xl shadow-sm p-6 flex flex-col">
             <h3 className="text-lg font-semibold mb-4">Add Income</h3>
 
             <TransactionForm

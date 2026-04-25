@@ -29,16 +29,13 @@ export const incomeApiSlice = apiSlice.injectEndpoints({
         method: "DELETE",
       }),
     }),
-    // incomeApiSlice.js
-getIncome: builder.query({
-  query: ({ page = 1, pageSize = 10 }) => ({
-    // Remove the leading slash if INCOMES_URL is "/incomes" 
-    // to avoid //api/v1//incomes
-    url: `incomes`, 
-    method: "GET",
-    params: { page, pageSize },
-  }),
-}),
+    getIncome: builder.query({
+      query: ({ page = 1, pageSize = 10 }) => ({
+        url: INCOMES_URL,
+        method: "GET",
+        params: { page, pageSize },
+      }),
+    }),
   }),
 });
 
